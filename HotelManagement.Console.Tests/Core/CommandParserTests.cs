@@ -14,7 +14,7 @@ namespace HotelManagement.Console.Tests.Core
             var result = CommandParser.ParseCommand(input);
 
             // Assert
-            Assert.Equal("Search", result.CommandName);
+            Assert.Equal("search", result.CommandName);
             Assert.Equal(3, result.Parameters.Length);
             Assert.Equal("hotel", result.Parameters[0]);
             Assert.Equal("3", result.Parameters[1]);
@@ -36,7 +36,7 @@ namespace HotelManagement.Console.Tests.Core
         public void ParseCommand_ShouldThrowInvalidOperationException_WhenParametersAreEmpty()
         {
             // Arrange
-            var input = "Command(,,)";
+            var input = "command(,,)";
 
             // Act & Assert
             var exception = Assert.Throws<InvalidOperationException>(() => CommandParser.ParseCommand(input));
@@ -53,7 +53,7 @@ namespace HotelManagement.Console.Tests.Core
             var result = CommandParser.ParseCommand(input);
 
             // Assert
-            Assert.Equal("Command", result.CommandName);
+            Assert.Equal("command", result.CommandName);
             Assert.Equal(3, result.Parameters.Length);
             Assert.Equal("param1", result.Parameters[0]);
             Assert.Equal("param2", result.Parameters[1]);
