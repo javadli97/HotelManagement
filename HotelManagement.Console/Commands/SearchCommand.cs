@@ -1,5 +1,4 @@
-﻿
-using HotelManagement.Console.Core;
+﻿using HotelManagement.Console.Core;
 using HotelManagement.Console.Model;
 
 namespace HotelManagement.Console.Commands
@@ -12,14 +11,13 @@ namespace HotelManagement.Console.Commands
 
         public SearchCommand(string hotelId, string days, string roomType)
         {
-
             if (!int.TryParse(days, out _days))
             {
                 throw new ArgumentException("Invalid days format. Expected an integer value.");
             }
 
-            _hotelId = hotelId;
-            _roomType = roomType;
+            _hotelId = hotelId.ToUpperInvariant();
+            _roomType = roomType.ToUpperInvariant();
         }
 
         public Task<string> ExecuteAsync()
@@ -34,7 +32,7 @@ namespace HotelManagement.Console.Commands
 
             // Create a dictionary to index bookings by hotel ID and room type
             var bookingDict = GlobalData.Bookings
-                .Where(b => b.HotelId == _hotelId && b.RoomType == _roomType)
+                .Where(b => b.HotelId.Equals(_hotelId) && b.RoomType.Equals(_roomType))
                 .GroupBy(b => new { b.HotelId, b.RoomType })
                 .ToDictionary(g => g.Key, g => g.ToList());
 

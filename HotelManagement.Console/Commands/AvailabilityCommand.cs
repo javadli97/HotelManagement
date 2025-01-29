@@ -12,8 +12,8 @@ namespace HotelManagement.Console.Commands
 
         public AvailabilityCommand(string hotelId, string dateRange, string roomType)
         {
-            _hotelId = hotelId;
-            _roomType = roomType;
+            _hotelId = hotelId.ToUpperInvariant();
+            _roomType = roomType.ToUpperInvariant();
 
             var dates = dateRange.Split('-');
             if (dates.Length != 2 || !DateTime.TryParseExact(dates[0], "yyyyMMdd", null, DateTimeStyles.None, out _startDate) || !DateTime.TryParseExact(dates[1], "yyyyMMdd", null, DateTimeStyles.None, out _endDate))
@@ -41,11 +41,10 @@ namespace HotelManagement.Console.Commands
                     & b.Departure > _startDate);
 
                 return await Task.FromResult($"{totalCount - bookingCount}");
-
             }
-            catch
+            catch(Exception e)
             {
-                throw new InvalidOperationException($"Error during handling availability command");
+                throw new InvalidOperationException($"Error during handling availability command: {e.Message}");
             }
         }
     }

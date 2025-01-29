@@ -16,6 +16,6 @@ namespace HotelManagement.Console.Core
         public static string BookingPath { get; } = Path.Combine(baseDirectory, "data", "bookings.json");
         public static string HotelPath { get; } = Path.Combine(baseDirectory, "data", "hotels.json");
 
-        
+
     }
 }

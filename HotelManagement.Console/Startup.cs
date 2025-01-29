@@ -1,10 +1,8 @@
 ﻿using HotelManagement.Console.Commands;
 using HotelManagement.Console.Core;
-using HotelManagement.Console.Model;
 using HotelManagement.Console.Services.Implementations;
 using HotelManagement.Console.Services.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
 
 namespace HotelManagement.Console
 {
@@ -12,11 +10,21 @@ namespace HotelManagement.Console
     {
         private readonly IFileService _fileService;
         private readonly IJsonService _jsonService;
+        private readonly IInitializationService _initializationService;
         private readonly CommandDispatcher _dispatcher;
 
-        public Startup()
-        {     
+
+        public static async Task<Startup> Initialize()
+        {
             var services = new ServiceCollection();
+
+            Startup startup = new Startup(services);
+            await startup.SeedCollections();
+            return startup;
+        }
+
+        public Startup(ServiceCollection services)
+        {
             _dispatcher = new CommandDispatcher();
 
             ConfigureServices(services);
@@ -25,26 +33,13 @@ namespace HotelManagement.Console
             var serviceProvider = services.BuildServiceProvider();
             _fileService = serviceProvider.GetRequiredService<IFileService>();
             _jsonService = serviceProvider.GetRequiredService<IJsonService>();
-        }
+            _initializationService = serviceProvider.GetRequiredService<IInitializationService>();
+        }        
 
-        public async Task ConfigureAsync()
-        {
-            try
-            {
-                using Stream hotelStream = await _fileService.OpenReadStreamAsync(GlobalSettings.HotelPath);
-                GlobalData.Hotels = await _jsonService.DeserializeJsonStreamAsync<List<Hotel>>(hotelStream);
-
-                using Stream bookingStream = await _fileService.OpenReadStreamAsync(GlobalSettings.BookingPath);
-                GlobalData.Bookings = await _jsonService.DeserializeJsonStreamAsync<List<Booking>>(bookingStream);
-            }
-            catch (Exception e)
-            {
-                throw new InvalidOperationException(e.Message);
-            }
-        }
 
         public async Task Run()
         {
+            System.Console.WriteLine("There are only two dediticates commands (e.g. Availability(H1, 20240901-20240903, DBL) and Search(H1, 365, SGL))");
             System.Console.WriteLine("Enter a blank line is entered to quit:");
 
             while (true)
@@ -74,9 +69,8 @@ namespace HotelManagement.Console
         {
             // Register services with DI
             services.AddTransient<IFileService, FileService>();           
-
-            // Register JsonService with DI
-            services.AddTransient<IJsonService>(provider => new JsonService(GlobalSettings.JsonSettings));
+            services.AddTransient<IInitializationService, InitializationService>();
+            services.AddTransient<IJsonService, JsonService>();
 
             // Register commands with the dispatcher
             _dispatcher.RegisterCommand("Availability", parameters => new AvailabilityCommand(
@@ -85,6 +79,11 @@ namespace HotelManagement.Console
             _dispatcher.RegisterCommand("Search", parameters => new SearchCommand(
                 parameters[0], parameters[1], parameters[2]
             ));
+        }
+
+        private async Task SeedCollections()
+        {
+            await _initializationService.InitializeAsync();
         }
     }
 }

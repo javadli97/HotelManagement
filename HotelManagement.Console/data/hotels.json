@@ -18,7 +18,7 @@
         ],
         "rooms": [
             {
-                "roomType": "SGL",
+                "roomType": "sgl",
                 "roomId": "101"
             },
             {
