@@ -2,45 +2,51 @@
 using HotelManagement.Console.Commands;
 using HotelManagement.Console.Core;
 using HotelManagement.Console.Model;
+using HotelManagement.Console.Requests;
+using Moq;
 
 namespace HotelManagement.Console.Tests.Commands
 {
     public class AvailabilityCommandTests
     {
+        private readonly Mock<IHotelRepository> _hotelRepositoryMock;
+        private readonly Mock<IBookingRepository> _bookingRepositoryMock;
+
         public AvailabilityCommandTests()
         {
-            // Initialize GlobalData with some test data
-            GlobalData.Hotels = new ConcurrentBag<Hotel>
+            _hotelRepositoryMock = new Mock<IHotelRepository>();
+            _bookingRepositoryMock = new Mock<IBookingRepository>();
+
+            // Initialize mock data
+            var hotels = new ConcurrentBag<Hotel>
+        {
+            new Hotel
             {
-                new Hotel
+                Id = "H1",
+                Name = "Hotel One",
+                Rooms = new List<Room>
                 {
-                    Id = "H1",
-                    Name = "Hotel One",
-                    Rooms = new List<Room>
-                    {
-                        new Room { RoomType = "DBL", RoomId = "101" },
-                        new Room { RoomType = "DBL", RoomId="102" }
-                    }
+                    new Room { RoomType = "DBL", RoomId = "101" },
+                    new Room { RoomType = "DBL", RoomId = "102" }
                 }
+            }
+        };
+
+            var bookings = new ConcurrentBag<Booking>
+            {
+                new Booking {HotelId = "H1", RoomType = "dbl", Arrival = new DateTime(2023,10,5), Departure = new DateTime(2023,10,6) }
             };
 
-            GlobalData.Bookings = new ConcurrentBag<Booking>
-            {
-                new Booking
-                {
-                    HotelId = "H1",
-                    RoomType = "DBL",
-                    Arrival = DateTime.Parse("2024-10-05"),
-                    Departure = DateTime.Parse("2024-10-06")
-                }
-            };            
+            _hotelRepositoryMock.Setup(repo => repo.GetHotels()).Returns(hotels);
+            _bookingRepositoryMock.Setup(repo => repo.GetBookings()).Returns(bookings);
         }
 
         [Fact]
         public async Task ExecuteAsync_ShouldReturnAvailableRooms_WhenRoomsAreAvailable()
         {
             // Arrange
-            var command = new AvailabilityCommand("H1", "20241005-20241006", "DBL");
+            var request = new AvailabilityRequest("H1", "20231005-20231006", "DBL");
+            var command = new AvailabilityCommand(request, _hotelRepositoryMock.Object, _bookingRepositoryMock.Object);
 
             // Act
             var result = await command.ExecuteAsync();
@@ -53,7 +59,8 @@ namespace HotelManagement.Console.Tests.Commands
         public async Task ExecuteAsync_ShouldReturnNoAvailableRooms_WhenNoRoomsAreAvailable()
         {
             // Arrange
-            var command = new AvailabilityCommand("H1", "20241005-20241006", "SGL");
+            var request = new AvailabilityRequest("H1", "20231005-20231006", "SGL");
+            var command = new AvailabilityCommand(request, _hotelRepositoryMock.Object, _bookingRepositoryMock.Object);
 
             // Act
             var result = await command.ExecuteAsync();
@@ -66,19 +73,12 @@ namespace HotelManagement.Console.Tests.Commands
         public async Task ExecuteAsync_ShouldReturnHotelNotFound_WhenHotelDoesNotExist()
         {
             // Arrange
-            var command = new AvailabilityCommand("H2", "20231005-20231006", "Single");
+            var request = new AvailabilityRequest("H2", "20231005-20231006", "Single");
+            var command = new AvailabilityCommand(request, _hotelRepositoryMock.Object, _bookingRepositoryMock.Object);
 
             // Act & Assert
             var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => command.ExecuteAsync());
             Assert.Equal("Error during handling availability command: Invalid hotel ID", exception.Message);
-        }
-
-        [Fact]
-        public void Constructor_ShouldThrowArgumentException_WhenDateRangeIsInvalid()
-        {
-            // Arrange, Act & Assert
-            var exception = Assert.Throws<ArgumentException>(() => new AvailabilityCommand("H1", "invalid-date-range", "Single"));
-            Assert.Equal("Invalid date range format. Expected format: yyyyMMdd-yyyyMMdd", exception.Message);
         }
     }
 }

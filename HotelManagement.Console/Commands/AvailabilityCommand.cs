@@ -1,48 +1,45 @@
-﻿using System.Globalization;
-using HotelManagement.Console.Core;
+﻿using HotelManagement.Console.Core;
+using HotelManagement.Console.Requests;
 
 namespace HotelManagement.Console.Commands
 {
     public class AvailabilityCommand : ICommand
     {
-        private readonly string _hotelId;
-        private readonly DateTime _startDate;
-        private readonly DateTime _endDate;
-        private readonly string _roomType;
+        private readonly AvailabilityRequest request;       
+        private readonly IHotelRepository _hotelRepository;
+        private readonly IBookingRepository _bookingRepository;
 
-        public AvailabilityCommand(string hotelId, string dateRange, string roomType)
+        public AvailabilityCommand(
+            AvailabilityRequest request,
+            IHotelRepository hotelRepository,
+            IBookingRepository bookingRepository)
         {
-            _hotelId = hotelId.ToUpperInvariant();
-            _roomType = roomType.ToUpperInvariant();
-
-            var dates = dateRange.Split('-');
-            if (dates.Length != 2 || !DateTime.TryParseExact(dates[0], "yyyyMMdd", null, DateTimeStyles.None, out _startDate) || !DateTime.TryParseExact(dates[1], "yyyyMMdd", null, DateTimeStyles.None, out _endDate))
-            {
-                throw new ArgumentException("Invalid date range format. Expected format: yyyyMMdd-yyyyMMdd");
-            }
+            this.request = request;
+            _hotelRepository = hotelRepository;
+            _bookingRepository = bookingRepository;           
         }
 
         public async Task<string> ExecuteAsync()
         {
             try
             {
-                var hotel = GlobalData.Hotels.FirstOrDefault(h => h.Id == _hotelId);
+                var hotel = _hotelRepository.GetHotels().FirstOrDefault(h => h.Id.Equals(request.HotelId, StringComparison.OrdinalIgnoreCase));
                 if (hotel == null)
                 {
                     throw new ArgumentException("Invalid hotel ID");
                 }
 
-                int totalCount = hotel.Rooms.Count(r => r.RoomType == _roomType);
+                int totalCount = hotel.Rooms.Count(r => r.RoomType.Equals(request.RoomType, StringComparison.OrdinalIgnoreCase));
 
-                int bookingCount = GlobalData.Bookings
-                    .Count(b => b.RoomType == _roomType
-                    & b.HotelId == _hotelId
-                    & b.Arrival < _endDate
-                    & b.Departure > _startDate);
+                int bookingCount = _bookingRepository.GetBookings()
+                    .Count(b => b.RoomType.Equals(request.RoomType, StringComparison.OrdinalIgnoreCase)
+                    & b.HotelId.Equals(request.HotelId, StringComparison.OrdinalIgnoreCase)
+                    & b.Arrival < request.EndDate
+                    & b.Departure > request.StartDate);
 
                 return await Task.FromResult($"{totalCount - bookingCount}");
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 throw new InvalidOperationException($"Error during handling availability command: {e.Message}");
             }

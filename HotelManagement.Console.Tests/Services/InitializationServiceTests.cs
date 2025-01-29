@@ -48,6 +48,8 @@ namespace HotelManagement.Console.Tests.Services
         {
             // Arrange
             _jsonServiceMock.Setup(js => js.DeserializeJsonStreamAsync<ConcurrentBag<Hotel>>(It.IsAny<Stream>())).ThrowsAsync(new InvalidOperationException("Test JsonService exception"));
+            GlobalData.Hotels = null;
+            GlobalData.Bookings = null;
 
             // Act & Assert
             var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => _initializationService.InitializeAsync());
@@ -62,6 +64,8 @@ namespace HotelManagement.Console.Tests.Services
         {
             // Arrange
             _fileServiceMock.Setup(js => js.OpenReadStreamAsync(It.IsAny<string>())).ThrowsAsync(new InvalidOperationException("Test FileService exception"));
+            GlobalData.Hotels = null;
+            GlobalData.Bookings = null;
 
             // Act & Assert
             var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => _initializationService.InitializeAsync());

@@ -1,5 +1,6 @@
 ﻿using HotelManagement.Console.Commands;
 using HotelManagement.Console.Core;
+using HotelManagement.Console.Requests;
 using HotelManagement.Console.Services.Implementations;
 using HotelManagement.Console.Services.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,11 +9,8 @@ namespace HotelManagement.Console
 {
     public class Startup
     {
-        private readonly IFileService _fileService;
-        private readonly IJsonService _jsonService;
         private readonly IInitializationService _initializationService;
         private readonly CommandDispatcher _dispatcher;
-
 
         public static async Task<Startup> Initialize()
         {
@@ -27,14 +25,13 @@ namespace HotelManagement.Console
         {
             _dispatcher = new CommandDispatcher();
 
-            ConfigureServices(services);
-
             // Create service provider
+            RegisterDependencies(services);
             var serviceProvider = services.BuildServiceProvider();
-            _fileService = serviceProvider.GetRequiredService<IFileService>();
-            _jsonService = serviceProvider.GetRequiredService<IJsonService>();
+            ConfigureServices(serviceProvider);
+
             _initializationService = serviceProvider.GetRequiredService<IInitializationService>();
-        }        
+        }
 
 
         public async Task Run()
@@ -65,20 +62,30 @@ namespace HotelManagement.Console
             }
         }
 
-        private void ConfigureServices(IServiceCollection services)
+
+        private void RegisterDependencies(IServiceCollection services)
         {
             // Register services with DI
-            services.AddTransient<IFileService, FileService>();           
+            services.AddTransient<IFileService, FileService>();
             services.AddTransient<IInitializationService, InitializationService>();
             services.AddTransient<IJsonService, JsonService>();
+            services.AddTransient<IHotelRepository, HotelRepository>();
+            services.AddTransient<IBookingRepository, BookingRepository>();
+        }
 
+        private void ConfigureServices(ServiceProvider serviceProvider)
+        {
             // Register commands with the dispatcher
-            _dispatcher.RegisterCommand("Availability", parameters => new AvailabilityCommand(
-                parameters[0], parameters[1], parameters[2]
-            ));
-            _dispatcher.RegisterCommand("Search", parameters => new SearchCommand(
-                parameters[0], parameters[1], parameters[2]
-            ));
+            _dispatcher.RegisterCommand("Availability", parameters =>
+            {
+                var request = new AvailabilityRequest(parameters[0], parameters[1], parameters[2]);
+                return new AvailabilityCommand(request, serviceProvider.GetRequiredService<IHotelRepository>(), serviceProvider.GetRequiredService<IBookingRepository>());
+            });
+            _dispatcher.RegisterCommand("Search", parameters =>
+            {
+                var request = new SearchRequest(parameters[0], parameters[1], parameters[2]);
+                return new SearchCommand(request, serviceProvider.GetRequiredService<IHotelRepository>(), serviceProvider.GetRequiredService<IBookingRepository>());
+            });
         }
 
         private async Task SeedCollections()
