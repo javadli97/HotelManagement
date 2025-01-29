@@ -76,12 +76,12 @@ namespace HotelManagement.Console
         private void ConfigureServices(ServiceProvider serviceProvider)
         {
             // Register commands with the dispatcher
-            _dispatcher.RegisterCommand("Availability", parameters =>
+            _dispatcher.RegisterCommand("availability", parameters =>
             {
                 var request = new AvailabilityRequest(parameters[0], parameters[1], parameters[2]);
                 return new AvailabilityCommand(request, serviceProvider.GetRequiredService<IHotelRepository>(), serviceProvider.GetRequiredService<IBookingRepository>());
             });
-            _dispatcher.RegisterCommand("Search", parameters =>
+            _dispatcher.RegisterCommand("search", parameters =>
             {
                 var request = new SearchRequest(parameters[0], parameters[1], parameters[2]);
                 return new SearchCommand(request, serviceProvider.GetRequiredService<IHotelRepository>(), serviceProvider.GetRequiredService<IBookingRepository>());
